@@ -65,6 +65,11 @@ class ProteinMoleculeDataset(Dataset):
                 v['node_pos'] = torch.arange(len(v['seq'])).reshape(-1,1)
                 v['edge_weight'] = v['edge_weight'].float()
 
+    def get(self, index):
+        return self.__getitem__(index)
+
+    def len(self):
+        return self.__len__()
     def __len__(self):
         return len(self.pairs)
 
