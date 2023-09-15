@@ -1,0 +1,50 @@
+{
+    "optimizer": {
+        "lrate": 0.0001,
+        "weight_decay": 0.0001,
+        "clip": 1,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "schedule_lr": false,
+        "min_lrate": 0,
+        "warmup_iters": 0,
+        "lr_decay_iters": 0,
+        "amsgrad": false
+    },
+    "params": {
+        "mol_in_channels": 43,
+        "prot_in_channels": 33,
+        "prot_evo_channels": 1280,
+        "hidden_channels": 200,
+        "aggregators": [
+            "mean",
+            "min",
+            "max",
+            "std"
+        ],
+        "scalers": [
+            "identity",
+            "amplification",
+            "linear"
+        ],
+        "pre_layers": 2,
+        "post_layers": 1,
+        "total_layer": 3,
+        "K": [
+            5,
+            10,
+            20
+        ],
+        "dropout": 0,
+        "dropout_attn_score": 0.2,
+        "heads": 5
+    },
+    "tasks": {
+        "regression_task": true,
+        "classification_task": false,
+        "mclassification_task": 0
+    }
+}
