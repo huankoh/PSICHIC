@@ -1,4 +1,5 @@
 ## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data
+| [Preprint](https://www.biorxiv.org/content/10.1101/2023.09.17.558145v1) | [Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing) | 
 
 ## Virtual Screening Platform <a href="https://colab.research.google.com/github/huankoh/PSICHIC/blob/main/PSICHIC.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -6,7 +7,7 @@
 - **Quick Screening**: Up to 100K compounds in an hour.
 - **Deep Analysis**: Uncover molecular insights with PSICHIC-powered pharmacophore and targeted mutagenesis analysis.
 
-_Start exploring. Your next discovery is just clicks away!_
+_Start exploring. Your next discovery could be just clicks away!_
 ## Conceptual Framework
 ![PSICHIC](image/PSICHIC.jpg)
 
@@ -37,12 +38,17 @@ python main.py --regression_task True --mclassification_task 3 --datafolder data
 For any other proteins, you can filter out irrelevant proteins and the non-binders in large-scale interaction dataset to apply PSICHIC for other experiments.
 
 ### Manuscript Experiment
-If you want to reproduce our results shown in the manuscript: download all files (including datasets) from [zenodo]() 
+If you want to reproduce our results shown in the manuscript: download all files (including datasets) from [zenodo](https://zenodo.org/record/8347859). Scripts for annotating PDB b-factors (used in PyMOL visualisation) is available in the Virtual Screening Colab notebook above.
 
-## Citation
+
+## References
 
 For more information, please refer to our work: 
 
 ```
-MONASH-DSAI+MIPS
+PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data
+Huan Yee Koh, Anh T.N. Nguyen, Shirui Pan, Lauren T. May, Geoffrey I. Webb
+bioRxiv 2023.09.17.558145; doi: https://doi.org/10.1101/2023.09.17.558145
 ```
+
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
