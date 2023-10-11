@@ -11,6 +11,15 @@ _Start exploring. Your next discovery could be just clicks away!_
 ## Conceptual Framework
 ![PSICHIC](image/PSICHIC.jpg)
 
+## Environment Setup
+```
+conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pyg -c pyg
+conda install -c conda-forge rdkit==2022.09.5
+pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-learn plotly mplcursors lifelines reprint
+pip install "fair-esm"
+```
+
 ## BYO-PSICHIC with Annotated Sequence Data 
 
 Create a train, valid and test csv file in a datafolder (for examples, see the dataset folder). The datafolder should contain at least a train.csv and test.csv file. Depending on your annotated labels, you want to use ``--regression_task True`` if it is a continuous value label (e.g., binding affinity), ``--classification_task True`` if it is a binary class label (e.g., presence of interaction) and ``--mclassification_task C`` where C represents the number of classes in your multiclass labels (e.g., 3 if you are using our protein-ligand functional response dataset). Note, you can have a dataset with multiple label types and we will train PSICHIC on predicting multiple protein-ligand interaction properties (see PSICHIC-MultiTask below)
