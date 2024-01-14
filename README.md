@@ -12,6 +12,19 @@ _Start exploring. Your next discovery could be just clicks away!_
 ![PSICHIC](image/PSICHIC.jpg)
 
 ## Environment Setup
+
+We would encourage using the faster mamba package and environment manager (this can be installed using ``conda install mamba -n base -c conda-forge``). After installing mamba, use the relevant code line below:
+
+```
+## OSX
+mamba env create -f environment_osx.yml
+## linux/windows with gpu
+mamba env create -f environment_gpu.yml
+## linux/windows with gpu
+mamba env create -f environment_cpu.yml
+```
+
+
 ```
 conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 conda install pyg -c pyg
