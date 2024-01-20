@@ -9,25 +9,20 @@
 
 _Start exploring. Your next discovery could be just clicks away!_
 ## Conceptual Framework
-![PSICHIC](image/PSICHIC.jpg)
+<img src="image/PSICHIC.jpg" width="500"/>
 
 ## Environment Setup
-
-We would encourage using the faster mamba package and environment manager (this can be installed using ``conda install mamba -n base -c conda-forge``). With mamba, use the relevant code line below:
+We recommend using the faster mamba package and environment manager, which can be installed using ``conda install mamba -n base -c conda-forge``. For setting up with either mamba or conda, use the relevant code line provided below. 
 
 ```
-## OSX
-mamba env create -f environment_osx.yml
-## linux/windows with gpu
-mamba env create -f environment_gpu.yml
-## linux/windows with gpu
-mamba env create -f environment_cpu.yml
+## OSX / LINUX CPU
+mamba env create -f environment_cpu.yml # if not mamba, use `` conda env create -f environment_cpu.yml ``
+## LINUX GPU
+mamba env create -f environment_gpu.yml # if not mamba, use `` conda env create -f environment_gpu.yml ``
 ```
+_The setup should work on OSX and LINUX - we haven't tested the setup on Windows due to travel commitments, but we plan to do so ASAP and will update this section accordingly._ 
 
-After installing and setting up the environment, activate it by running conda activate psichic_env, and you are ready to go!
-
-
-Alternatively, here's some command lines that can help in setting up the environment for running PSICHIC (tested on linux with python 3.8: ``conda create -n psichic_env python=3.8``). 
+Alternatively, command lines that can be helpful in setting up the environment (tested on linux with python 3.10). 
 ```
 conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 conda install pyg -c pyg
@@ -36,8 +31,6 @@ pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-lear
 pip install "fair-esm"
 ```
 
-## Datasets
-All datasets used in our manuscript are available ([Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing)). A separate README.md file has been created in the dataset folder. This file includes a Jupyter notebook that illustrates how we perform random splits, unseen protein splits, and unseen ligand scaffold splits.
 ## BYO-PSICHIC with Annotated Sequence Data 
 
 Create a train, valid and test csv file in a datafolder (for examples, see the dataset folder). The datafolder should contain at least a train.csv and test.csv file. Depending on your annotated labels, you want to use ``--regression_task True`` if it is a continuous value label (e.g., binding affinity), ``--classification_task True`` if it is a binary class label (e.g., presence of interaction) and ``--mclassification_task C`` where C represents the number of classes in your multiclass labels (e.g., 3 if you are using our protein-ligand functional response dataset). Note, you can have a dataset with multiple label types and we will train PSICHIC on predicting multiple protein-ligand interaction properties (see PSICHIC-MultiTask below)
@@ -50,16 +43,76 @@ BYO-PSICHIC using a benchmark dataset, for example, the PDBBind v2020 benchmark:
 python main.py --datafolder pdb2020 --result_path result/PDB2020_BENCHMARK --regression_task True 
 ```
 Model and optimizer configurations are consistent across all benchmark datasets, except PDBBind v2016 where you want to change the optimizer's number of training iterations, betas and eps to 30000, "(0.9,0.99)" and 1e-5 respectively, i.e. add to the commandline: ``--total_iters 30000 --betas "(0.9,0.99)" --eps 1e-5``. For binary classification task, replace ``--regression_task True`` to ``--classification_task True``. For protein functional effect dataset, replace ``--regression_task True`` to ``--mclassification_task 3``. Feel free to adjust the model hyperparameters in the config.json file, let us know if you find any interesting results!
+
+
+## Datasets
+All datasets referenced in our manuscript are available on Google Drive ([Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing)). For the datasets used in the benchmark evaluation of PSICHIC, we have train, valid, and test CSV files that have been created based on established split settings. A separate README.md in the dataset section is dedicated to explaining the purpose of each dataset in the Google Drive Link (this is similar to Extended Data Table 1 in our manuscript). 
+
+BYO-PSICHIC Dataset: Each file should look something like this if you are interested in training BYO-PSICHIC. A validation CSV file is not required if you don't have one, for instance, if you plan to apply the results in external experiments.
+
+__Binding Affinity Regression__
+
+| Protein | Ligand | regression_label | 
+|:----------:|:----------:|:----------:|
+| ATCGATCG....  | C1CCCCC1  | 6.7 | 
+| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 |
+|...|...| ...|
+|TACGTACG | CCO | 8.1 | 
+
+```
+python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --regression_task True 
+```
+
+__Binary Interaction Classification__
+
+| Protein | Ligand | classification_label | 
+|:----------:|:----------:|:----------:|
+| ATCGATCG....  | C1CCCCC1  | 1 | 
+| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 0 |
+|...|...| ...|
+|TACGTACG | CCO | 1 | 
+
+```
+python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --classification_task True
+```
+
+__Functional Effect Classification (Three-way Classification)__
+
+| Protein | Ligand | mclassification_label | 
+|:----------:|:----------:|:----------:|
+| ATCGATCG....  | C1CCCCC1  | -1 |  # antagonist
+| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 0 | # non-binder
+|...|...| ...|
+|TACGTACG | CCO | 1 | # agonist
+
+```
+python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --mclassification_task 3
+```
+
+__Multi Task PSICHIC__
+
+| Protein | Ligand | regression_label | mclassification_label | 
+|:----------:|:----------:|:----------:|:----------:|
+| ATCGATCG....  | C1CCCCC1  | 6.7 | -1 |  # antagonist
+| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 | 0 | # non-binder
+|...|...| ...|
+|TACGTACG | CCO | 8.1 | 1 | # agonist
+
+```
+python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --regression_task True --mclassification_task 3
+```
+
+**Strategically Split Your Dataset?** Jupyter notebook in dataset folder is available to illustrate how we perform random splits, unseen protein splits, and unseen ligand scaffold splits to evaluate the generalizability of PSICHIC or other methods. This can be useful in evaluating whether the BYO-PSICHIC works on your annotated sequence data.
  
-## PSICHIC-MultiTask: Pretrain-then-Finetune 
-### Pre-train PSICHIC
+## PSICHIC<sub>XL</sub>: Multitask Prediction Training on Large-scale Interaction Dataset
+### Training PSICHIC<sub>XL</sub>
 ```
 python main.py --datafolder dataset/large_scale_interaction_dataset --result_path PSICHIC_MultiTask_Pretrain --lrate 1e-5 --sampling_col pretrain_sampling_weight --regression_task True --mclassification_task 3 --total_iters 300000 --evaluate_step 25000
 ```
-### Fine-tune PSICHIC
-We finetune only the functional effect classification head of the pre-trained PSICHIC for 1000 iteration on A1R related protein using the following command:
+### Fine-tune PSICHIC<sub>XL</sub> into PSICHIC<sub>A<sub>1</sub>R</sub>
+We finetune only the application layers of PSICHIC<sub>XL</sub> for 1000 iteration on A<sub>1</sub>R-related protein using the following command:
 ```
-python main.py --regression_task True --mclassification_task 3 --datafolder dataset/A1R_FineTune --result_path PSICHIC_A1R_FineTune --lrate 1e-5 --total_iters 1000 --finetune_modules "['mcls_out']" --trained_model_path trained_weights/multitask_PSICHIC
+python main.py --regression_task True --mclassification_task 3 --datafolder dataset/A1R_FineTune --result_path PSICHIC_A1R_FineTune --lrate 1e-5 --total_iters 1000 --finetune_modules "['reg_out','mcls_out']" --trained_model_path trained_weights/multitask_PSICHIC
 ```
 
 For any other proteins, you can filter out irrelevant proteins and the non-binders in large-scale interaction dataset to apply PSICHIC for other experiments.
