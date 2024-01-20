@@ -36,6 +36,8 @@ pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-lear
 pip install "fair-esm"
 ```
 
+## Datasets
+All datasets used in our manuscript are available ([Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing)). A separate README.md file has been created in the dataset folder. This file includes a Jupyter notebook that illustrates how we perform random splits, unseen protein splits, and unseen ligand scaffold splits.
 ## BYO-PSICHIC with Annotated Sequence Data 
 
 Create a train, valid and test csv file in a datafolder (for examples, see the dataset folder). The datafolder should contain at least a train.csv and test.csv file. Depending on your annotated labels, you want to use ``--regression_task True`` if it is a continuous value label (e.g., binding affinity), ``--classification_task True`` if it is a binary class label (e.g., presence of interaction) and ``--mclassification_task C`` where C represents the number of classes in your multiclass labels (e.g., 3 if you are using our protein-ligand functional response dataset). Note, you can have a dataset with multiple label types and we will train PSICHIC on predicting multiple protein-ligand interaction properties (see PSICHIC-MultiTask below)
@@ -61,10 +63,6 @@ python main.py --regression_task True --mclassification_task 3 --datafolder data
 ```
 
 For any other proteins, you can filter out irrelevant proteins and the non-binders in large-scale interaction dataset to apply PSICHIC for other experiments.
-
-### Manuscript Experiment
-If you want to reproduce our results shown in the manuscript: download all files (including datasets) from [zenodo](https://zenodo.org/record/8347859). Scripts for annotating PDB b-factors (used in PyMOL visualisation) is available in the Virtual Screening Colab notebook above.
-
 
 ## References
 
