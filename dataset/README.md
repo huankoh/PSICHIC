@@ -1,4 +1,4 @@
-![image](https://github.com/huankoh/PSICHIC/assets/71744503/7302925e-e847-4fa7-9c8b-c54cbc17cff6)# PSICHIC Dataset
+# PSICHIC Dataset
 
 Below describe all the datasets that are available on Google Drive ([Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing)).
 
