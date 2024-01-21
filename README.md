@@ -1,5 +1,29 @@
-## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data
-| [Preprint](https://www.biorxiv.org/content/10.1101/2023.09.17.558145v1) | [Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing) | 
+## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data [[Preprint](https://www.biorxiv.org/content/10.1101/2023.09.17.558145v1)]
+
+<img src="image/PSICHIC.jpg" width="500"/>
+
+## Environment Setup
+We recommend using the faster mamba package and environment manager, which can be installed using ``conda install mamba -n base -c conda-forge``. For setting up with either conda or mamba, use the relevant code line provided below. 
+
+```
+## OSX 
+conda env create -f environment_osx.yml  # if mamba, use ``mamba env create -f environment_osx.yml``
+## LINUX CPU
+conda env create -f environment_cpu.yml  # if mamba, use ``mamba env create -f environment_cpu.yml``
+## LINUX GPU
+conda env create -f environment_gpu.yml # if mamba, use ``mamba env create -f environment_gpu.yml``
+```
+_The setup should work on OSX and LINUX - the yml files for LINUX should work for Windows but this is not validated yet due to travel commitments, we will do so ASAP (by 15 Feb 24) and will update this section accordingly._ 
+
+Alternatively, command lines that can be helpful in setting up the environment (tested on linux with python 3.10). 
+```
+conda create --name psichic_fp python=3.10
+conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pyg -c pyg
+conda install -c conda-forge rdkit==2022.09.5
+pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-learn plotly mplcursors lifelines reprint
+pip install "fair-esm"
+```
 
 ## Virtual Screening Platform <a href="https://colab.research.google.com/github/huankoh/PSICHIC/blob/main/PSICHIC.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -8,28 +32,8 @@
 - **Deep Analysis**: Uncover molecular insights with PSICHIC-powered pharmacophore and targeted mutagenesis analysis.
 
 _Start exploring. Your next discovery could be just clicks away!_
-## Conceptual Framework
-<img src="image/PSICHIC.jpg" width="500"/>
 
-## Environment Setup
-We recommend using the faster mamba package and environment manager, which can be installed using ``conda install mamba -n base -c conda-forge``. For setting up with either mamba or conda, use the relevant code line provided below. 
-
-```
-## OSX / LINUX CPU
-mamba env create -f environment_cpu.yml # if not mamba, use `` conda env create -f environment_cpu.yml ``
-## LINUX GPU
-mamba env create -f environment_gpu.yml # if not mamba, use `` conda env create -f environment_gpu.yml ``
-```
-_The setup should work on OSX and LINUX - we haven't tested the setup on Windows due to travel commitments, but we plan to do so ASAP and will update this section accordingly._ 
-
-Alternatively, command lines that can be helpful in setting up the environment (tested on linux with python 3.10). 
-```
-conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
-conda install pyg -c pyg
-conda install -c conda-forge rdkit==2022.09.5
-pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-learn plotly mplcursors lifelines reprint
-pip install "fair-esm"
-```
+**UPDATE:** We now included selectivity online platform (beta version) in selectivity subfolder that demonstrate how PSICHIC can be used for selectivity profiling.
 
 ## BYO-PSICHIC with Annotated Sequence Data 
 
@@ -45,7 +49,7 @@ python main.py --datafolder pdb2020 --result_path result/PDB2020_BENCHMARK --reg
 Model and optimizer configurations are consistent across all benchmark datasets, except PDBBind v2016 where you want to change the optimizer's number of training iterations, betas and eps to 30000, "(0.9,0.99)" and 1e-5 respectively, i.e. add to the commandline: ``--total_iters 30000 --betas "(0.9,0.99)" --eps 1e-5``. For binary classification task, replace ``--regression_task True`` to ``--classification_task True``. For protein functional effect dataset, replace ``--regression_task True`` to ``--mclassification_task 3``. Feel free to adjust the model hyperparameters in the config.json file, let us know if you find any interesting results!
 
 
-## Datasets
+## Dataset Structure and BYO Formatting Guidelines
 All datasets referenced in our manuscript are available on Google Drive ([Dataset](https://drive.google.com/drive/folders/1ZRpnwXtllCP89hjhfDuPivBlarBIXnmu?usp=sharing)). For the datasets used in the benchmark evaluation of PSICHIC, we have train, valid, and test CSV files that have been created based on established split settings. A separate README.md in the dataset section is dedicated to explaining the purpose of each dataset in the Google Drive Link (this is similar to Extended Data Table 1 in our manuscript). 
 
 BYO-PSICHIC Dataset: Each file should look something like this if you are interested in training BYO-PSICHIC. A validation CSV file is not required if you don't have one, for instance, if you plan to apply the results in external experiments.
@@ -78,7 +82,7 @@ python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --classificatio
 
 __Functional Effect Classification (Three-way Classification)__
 
-| Protein | Ligand | mclassification_label | 
+| Protein | Ligand | multiclass_label | 
 |:----------:|:----------:|:----------:|
 | ATCGATCG....  | C1CCCCC1  | -1 |  # antagonist
 | GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 0 | # non-binder
@@ -91,7 +95,7 @@ python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --mclassificati
 
 __Multi Task PSICHIC__
 
-| Protein | Ligand | regression_label | mclassification_label | 
+| Protein | Ligand | regression_label | multiclass_label | 
 |:----------:|:----------:|:----------:|:----------:|
 | ATCGATCG....  | C1CCCCC1  | 6.7 | -1 |  # antagonist
 | GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 | 0 | # non-binder
