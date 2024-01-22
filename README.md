@@ -3,7 +3,7 @@
 <img src="image/PSICHIC.jpg" width="500"/>
 
 ## Environment Setup
-We recommend using the faster mamba package and environment manager, which can be installed using ``conda install mamba -n base -c conda-forge``. For setting up with either conda or mamba, use the relevant code line provided below. 
+Currently, PSICHIC is validated for use on MacOS (OSX) and Linux. We recommend installation via conda, or even better, using the faster mamba package and environment manager. Mamba can be installed with the command ``conda install mamba -n base -c conda-forge``. For setup using either conda or mamba, please refer to the relevant code line provided below.
 
 ```
 ## OSX 
@@ -13,11 +13,11 @@ conda env create -f environment_cpu.yml  # if mamba, use ``mamba env create -f e
 ## LINUX GPU
 conda env create -f environment_gpu.yml # if mamba, use ``mamba env create -f environment_gpu.yml``
 ```
-_The setup should work on OSX and LINUX - the yml files for LINUX should work for Windows but this is not validated yet due to travel commitments, we will do so ASAP (by 15 Feb 24) and will update this section accordingly._ 
+_The yml files for Linux should also work for Windows but this is not validated yet due to travel commitments, we will do so ASAP (by 15 Feb 24) and will update this section accordingly._ 
 
-Alternatively, command lines that can be helpful in setting up the environment (tested on linux with python 3.10). 
+Alternatively, command lines that can be helpful in setting up the environment (tested on linux with python 3.8). 
 ```
-conda create --name psichic_fp python=3.10
+conda create --name psichic_fp python=3.8
 conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 conda install pyg -c pyg
 conda install -c conda-forge rdkit==2022.09.5
@@ -109,6 +109,8 @@ python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --regression_ta
 **Strategically Split Your Dataset?** Jupyter notebook in dataset folder is available to illustrate how we perform random splits, unseen protein splits, and unseen ligand scaffold splits to evaluate the generalizability of PSICHIC or other methods. This can be useful in evaluating whether the BYO-PSICHIC works on your annotated sequence data.
  
 ## PSICHIC<sub>XL</sub>: Multitask Prediction Training on Large-scale Interaction Dataset
+The PSICHIC<sub>XL</sub> was previously referred to as the pre-trained multi-task PSICHIC. The PSICHIC<sub>A1R</sub> was previously referred to as the fine-tuned multi-task PSICHIC. We changed the name to clarify that PSICHIC<sub>XL</sub> can be used as is without any additional training. However, PSICHIC<sub>XL</sub> can potentially improve its ranking capabilities in virtual screening when fine-tuned on data specific to a protein target, e.g., the PSICHIC<sub>A<sub>1</sub>R</sub> we show below using A<sub>1</sub>R-related data.
+
 ### Training PSICHIC<sub>XL</sub>
 ```
 python main.py --datafolder dataset/large_scale_interaction_dataset --result_path PSICHIC_MultiTask_Pretrain --lrate 1e-5 --sampling_col pretrain_sampling_weight --regression_task True --mclassification_task 3 --total_iters 300000 --evaluate_step 25000
