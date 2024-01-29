@@ -8,14 +8,12 @@ Currently, PSICHIC is validated for use on MacOS (OSX) and Linux. We recommend i
 ```
 ## OSX 
 conda env create -f environment_osx.yml  # if mamba, use ``mamba env create -f environment_osx.yml``
-## LINUX CPU
-conda env create -f environment_cpu.yml  # if mamba, use ``mamba env create -f environment_cpu.yml``
-pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.1.0+cpu.html
-
 ## LINUX GPU
 conda env create -f environment_gpu.yml # if mamba, use ``mamba env create -f environment_gpu.yml``
 pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.1.0+cu118.html
-
+## LINUX CPU
+conda env create -f environment_cpu.yml  # if mamba, use ``mamba env create -f environment_cpu.yml``
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.1.0+cpu.html
 ```
 _The yml files for Linux should also work for Windows but this is not validated yet due to travel commitments, we will do so ASAP (by 15 Feb 24) and will update this section accordingly._ 
 
