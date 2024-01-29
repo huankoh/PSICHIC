@@ -26,6 +26,7 @@ parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--screenfile', type=str, default='dataset/pdb2020/test.csv', help='csv file')
 parser.add_argument('--result_path', type=str,default='FinalScreen_pdb2020',help='path to save results')
 parser.add_argument('--save_interpret', type=bool,default=True,help='Save interpretation from PSICHIC?')
+parser.add_argument('--save_cluster', type=bool,default=False,help='Save Residue-to-Region Assignment Matrix from PSICHIC?')
 
 args = parser.parse_args()
 
@@ -85,7 +86,8 @@ screen_loader = DataLoader(screen_dataset, batch_size=args.batch_size, shuffle=F
 print("Screening starts now!")
 screen_df = virtual_screening(screen_df, model, screen_loader,
                  result_path=os.path.join(args.result_path, "interpretation_result"), save_interpret=args.save_interpret, 
-                 ligand_dict=ligand_dict, device=args.device)
+                 ligand_dict=ligand_dict, device=args.device,
+                 save_cluster=args.save_cluster)
 
 screen_df.to_csv(os.path.join(args.result_path,'screening.csv'),index=False)
 print('Screening completed and saved to {}'.format(args.result_path))

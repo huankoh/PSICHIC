@@ -1,27 +1,29 @@
-name: psichic_env
+name: psichic_fp
 channels:
-  - pytorch
+  - pytorch  # Highest priority for pytorch and related packages
   - nvidia
   - conda-forge
   - defaults
+  - pyg
 dependencies:
   - python=3.8
-  - pytorch==2.0.0
-  - torchvision==0.15.0
-  - torchaudio==2.0.0
-  - cudatoolkit=11.7
-  - pyg
-  - rdkit==2022.09.5
-  - scipy
-  - biopython
-  - pandas
-  - biopandas
-  - timeout_decorator
-  - py3Dmol
-  - umap-learn
-  - plotly
-  - mplcursors
-  - lifelines
-  - reprint
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=11.8
+  - pyg::pyg
+  - pip
   - pip:
+    - rdkit
+    - scipy
+    - biopython
+    - pandas
+    - biopandas
+    - timeout_decorator
+    - py3Dmol
+    - umap-learn
+    - plotly
+    - mplcursors
+    - lifelines
+    - reprint
     - fair-esm

@@ -1,25 +1,27 @@
-name: psichic_env
+name: psichic_fp_test2
 channels:
-  - pytorch
-  - conda-forge
   - defaults
-dependencies:
-  - python=3.8
-  - pytorch==2.0.0
-  - torchvision==0.15.0
-  - torchaudio==2.0.0
+  - conda-forge
+  - pytorch
   - pyg
-  - rdkit==2022.09.5
-  - scipy
-  - biopython
-  - pandas
-  - biopandas
-  - timeout_decorator
-  - py3Dmol
-  - umap-learn
-  - plotly
-  - mplcursors
-  - lifelines
-  - reprint
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pyg
+  - pip
   - pip:
+    - rdkit
+    - scipy
+    - biopython
+    - pandas
+    - biopandas
+    - timeout_decorator
+    - py3Dmol
+    - umap-learn
+    - plotly
+    - mplcursors
+    - lifelines
+    - reprint
     - fair-esm

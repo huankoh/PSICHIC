@@ -147,6 +147,21 @@ def unbatch(src, batch, dim: int = 0):
     return src.split(sizes, dim)
 
 
+def unbatch_nodes(data_tensor, index_tensor):
+    """
+    Unbatch a data tensor based on an index tensor.
+
+    Args:
+    data_tensor (torch.Tensor): The tensor to be unbatched.
+    index_tensor (torch.Tensor): A tensor of the same length as data_tensor's first dimension, 
+                                 indicating the batch index for each element in data_tensor.
+
+    Returns:
+    list[torch.Tensor]: A list of tensors, where each tensor corresponds to a separate batch.
+    """
+    return [data_tensor[index_tensor == i] for i in index_tensor.unique()]
+
+
 def repeater(data_loader):
     for loader in repeat(data_loader):
         for data in loader:
@@ -241,14 +256,15 @@ def store_ligand_score(ligand_smiles, atom_types, atom_scores, ligand_path):
 
     return True
     
-def store_result(df, attention_dict, interaction_keys,  ligand_dict, reg_pred=None, cls_pred=None, mcls_pred=None, 
+def store_result(df, attention_dict, interaction_keys,  ligand_dict, 
+                 reg_pred=None, cls_pred=None, mcls_pred=None, 
                  result_path='', save_interpret=True):
     if save_interpret:
         unbatched_residue_score = unbatch(attention_dict['residue_final_score'],attention_dict['protein_residue_index'])
         unbatched_atom_score = unbatch(attention_dict['atom_final_score'], attention_dict['drug_atom_index'])
         unbatched_residue_layer_score = unbatch(attention_dict['residue_layer_scores'],attention_dict['protein_residue_index'])
         unbatched_clique_layer_score = unbatch(attention_dict['clique_layer_scores'], attention_dict['drug_clique_index'])
-
+    
     for idx, key in enumerate(interaction_keys):
         matching_row = (df['Protein'] == key[0]) & (df['Ligand'] == key[1])
         if reg_pred is not None:
@@ -272,6 +288,12 @@ def store_result(df, attention_dict, interaction_keys,  ligand_dict, reg_pred=No
                 df['predicted_nonbinder'] = None
                 df['predicted_agonist'] = None
                 df.loc[matching_row, ['predicted_antagonist','predicted_nonbinder','predicted_agonist']] = mcls_pred[idx].tolist()
+        
+
+        if all([idx in attention_dict['cluster_s'] for idx in range(3)]):
+            unbatched_cluster_s0 = unbatch_nodes(attention_dict['cluster_s'][0].softmax(dim=-1), attention_dict['protein_residue_index'])
+            unbatched_cluster_s1 = unbatch_nodes(attention_dict['cluster_s'][1].softmax(dim=-1), attention_dict['protein_residue_index'])
+            unbatched_cluster_s2 = unbatch_nodes(attention_dict['cluster_s'][2].softmax(dim=-1), attention_dict['protein_residue_index'])
 
         if save_interpret:
             for pair_id in df[matching_row]['ID']:
@@ -283,9 +305,20 @@ def store_result(df, attention_dict, interaction_keys,  ligand_dict, reg_pred=No
                     'Residue_Type':list(key[0]),
                     'PSICHIC_Residue_Score':minmax_norm(unbatched_residue_score[idx].cpu().flatten().numpy())
                     })
+
                 protein_interpret['Residue_ID'] = protein_interpret.index + 1
                 protein_interpret['PSICHIC_Residue_Percentile'] = percentile_rank(protein_interpret['PSICHIC_Residue_Score'])
                 protein_interpret = protein_interpret[['Residue_ID','Residue_Type','PSICHIC_Residue_Score','PSICHIC_Residue_Percentile']]
+
+                if all([id_ in attention_dict['cluster_s'] for id_ in range(3)]):
+                    for ci in range(5):
+                        protein_interpret['Layer0_Cluster'+str(ci)] = unbatched_cluster_s0[idx][:,ci].cpu().flatten().numpy()
+
+                    for ci in range(10):
+                        protein_interpret['Layer1_Cluster'+str(ci)] = unbatched_cluster_s1[idx][:,ci].cpu().flatten().numpy()
+                    
+                    for ci in range(20):
+                        protein_interpret['Layer2_Cluster'+str(ci)] = unbatched_cluster_s2[idx][:,ci].cpu().flatten().numpy()
 
                 protein_interpret.to_csv(os.path.join(pair_path,'protein.csv'),index=False)
 
@@ -303,7 +336,8 @@ def store_result(df, attention_dict, interaction_keys,  ligand_dict, reg_pred=No
                         )
     return df
 
-def virtual_screening(screen_df, model, data_loader, result_path, save_interpret=True, ligand_dict=None, device='cpu'):
+def virtual_screening(screen_df, model, data_loader, result_path, save_interpret=True, ligand_dict=None, device='cpu',
+                        save_cluster=False):
     if "ID" in screen_df.columns:
         # Iterate through the DataFrame check any empty pairs 
         for i, row in screen_df.iterrows():
@@ -331,7 +365,9 @@ def virtual_screening(screen_df, model, data_loader, result_path, save_interpret
                     residue_edge_index=data.prot_edge_index,
                     residue_edge_weight=data.prot_edge_weight,
                     # Mol-Protein Interaction batch
-                    mol_batch=data.mol_x_batch, prot_batch=data.prot_node_aa_batch, clique_batch=data.clique_x_batch
+                    mol_batch=data.mol_x_batch, prot_batch=data.prot_node_aa_batch, clique_batch=data.clique_x_batch,
+                    # save_cluster
+                    save_cluster=save_cluster
             )
             interaction_keys = list(zip(data.prot_key, data.mol_key))
 
