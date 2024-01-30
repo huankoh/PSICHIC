@@ -207,7 +207,9 @@ class net(torch.nn.Module):
                 # Protein
                 residue_x, residue_evo_x, residue_edge_index, residue_edge_weight, 
                 # Mol-Protein Interaction batch
-                mol_batch=None, prot_batch=None, clique_batch=None):
+                mol_batch=None, prot_batch=None, clique_batch=None,
+                ## only if you're interested in clustering algorithm 
+                save_cluster = False):
         # Init variables        
         reg_pred = None
         cls_pred = None
@@ -231,7 +233,7 @@ class net(torch.nn.Module):
 
         clique_scores = []
         residue_scores = []
-
+        layer_s = {}
         # MOLECULE-PROTEIN Layers
         for idx in range(self.total_layer):
             atom_x = self.mol_convs[idx](atom_x, bond_x, atom_edge_index)
@@ -248,6 +250,9 @@ class net(torch.nn.Module):
             s = self.cluster[idx](residue_x, dropped_residue_edge_index)
             residue_hx, residue_mask = to_dense_batch(residue_x, prot_batch)
 
+            if save_cluster:
+                layer_s[idx] = s 
+
             # cluster features
             s, _ = to_dense_batch(s, prot_batch)
             residue_adj = to_dense_adj(residue_edge_index, prot_batch)
@@ -262,7 +267,7 @@ class net(torch.nn.Module):
                 cluster_drop_mask = residue_mask * residue_drop_mask.squeeze()
 
             s, cluster_x, residue_adj, cl_loss, o_loss = dense_mincut_pool(residue_hx, residue_adj, s, cluster_mask, cluster_drop_mask)
-
+            
             # spectral_loss += sp_loss
             ortho_loss += o_loss
             cluster_loss += cl_loss
@@ -344,6 +349,8 @@ class net(torch.nn.Module):
             'mol_feature': mol_pool_feat,
             'prot_feature':prot_pool_feat,
             'interaction_fingerprint':mol_prot_feat,
+            'cluster_s': layer_s
+
         }
         
         return reg_pred, cls_pred, mcls_pred, spectral_loss, ortho_loss, cluster_loss, attention_dict
