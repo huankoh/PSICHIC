@@ -1,4 +1,4 @@
-name: psichic_fp_test2
+name: psichic_fp
 channels:
   - defaults
   - conda-forge

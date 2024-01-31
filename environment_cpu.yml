@@ -1,4 +1,4 @@
-name: psichic_cpu_final
+name: psichic_fp
 channels:
   - pytorch  # Highest priority for pytorch and related packages
   - conda-forge
