@@ -3,7 +3,7 @@
 <img src="image/PSICHIC.jpg" width="500"/>
 
 ## Environment Setup
-Currently, PSICHIC is validated for use on MacOS (OSX) and Linux. We recommend installation via conda, or even better, using the faster mamba package and environment manager. Mamba can be installed with the command ``conda install mamba -n base -c conda-forge``. For setup using either conda or mamba, please refer to the relevant code line provided below.
+Currently, PSICHIC is validated for use on MacOS (OSX), Linux and Windows. We recommend installation via conda, or even better, using the faster mamba package and environment manager. Mamba can be installed with the command ``conda install mamba -n base -c conda-forge``. For setup using either conda or mamba, please refer to the relevant code line provided below.
 
 ```
 ## OSX 
@@ -47,7 +47,7 @@ python main.py --datafolder annotated_folder --result_path result/annotated_resu
 
 BYO-PSICHIC using a benchmark dataset, for example, the PDBBind v2020 benchmark:
 ```
-python main.py --datafolder pdb2020 --result_path result/PDB2020_BENCHMARK --regression_task True 
+python main.py --datafolder dataset/pdb2020 --result_path result/PDB2020_BENCHMARK --regression_task True 
 ```
 Model and optimizer configurations are consistent across all benchmark datasets, except PDBBind v2016 where you want to change the optimizer's number of training iterations, betas and eps to 30000, "(0.9,0.99)" and 1e-5 respectively, i.e. add to the commandline: ``--total_iters 30000 --betas "(0.9,0.99)" --eps 1e-5``. For binary classification task, replace ``--regression_task True`` to ``--classification_task True``. For protein functional effect dataset, replace ``--regression_task True`` to ``--mclassification_task 3``. Feel free to adjust the model hyperparameters in the config.json file, let us know if you find any interesting results!
 
