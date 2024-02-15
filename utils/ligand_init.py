@@ -1,5 +1,4 @@
 from rdkit import Chem
-from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem.rdchem import BondType
 
 from rdkit.Chem import ChemicalFeatures
