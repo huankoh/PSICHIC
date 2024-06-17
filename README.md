@@ -4,7 +4,7 @@
 
 ## PSICHIC Webserver <a href="http://www.psichicserver.com" target="_blank"><img src="image/crystal_ball.png" alt="PSICHIC Webserver" width="30"/></a>
 
-Exciting news❗ The PSICHIC webserver (beta version) is now available! 🚀 Experience the future of protein-ligand interaction analysis at at [www.psichicserver.com](www.psichicserver.com) 
+Exciting news❗ The PSICHIC webserver (beta version) is now available! 🚀 Experience the future of protein-ligand interaction analysis at at [www.psichicserver.com](https://www.psichicserver.com/)
 
 _Start exploring. Your next discovery_ 🌐🔬 _could be just clicks away!_
 
