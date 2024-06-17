@@ -1,8 +1,27 @@
-## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data [[Preprint](https://www.biorxiv.org/content/10.1101/2023.09.17.558145v1)]
+## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data [[Nature Machine Intelligence](https://www.nature.com/articles/s42256-024-00847-1)]
 
 <img src="image/PSICHIC.jpg" width="500"/>
 
-## Environment Setup
+## PSICHIC Webserver <a href="http://www.psichicserver.com" target="_blank"><img src="image/crystal_ball.png" alt="PSICHIC Webserver" width="30"/></a>
+
+Exciting news❗ The PSICHIC webserver (beta version) is now available! 🚀 Experience the future of protein-ligand interaction analysis at at [www.psichicserver.com](www.psichicserver.com) 
+
+_Start exploring. Your next discovery_ 🌐🔬 _could be just clicks away!_
+
+## PSICHIC Virtual Screening Platform <a href="https://colab.research.google.com/github/huankoh/PSICHIC/blob/main/PSICHIC.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+- **Only Sequence Data**: Protein Sequence + Ligand SMILES pairs is all you need.
+- **Quick Screening**: Up to 100K compounds in an hour.
+- **Deep Analysis**: Uncover molecular insights with PSICHIC-powered pharmacophore and targeted mutagenesis analysis.
+
+**UPDATE:** We now included selectivity online platform (beta version) in selectivity subfolder that demonstrate how PSICHIC can be used for selectivity profiling.
+
+
+## PSICHIC Environment Setup for Local Deployment
+<details>
+<summary>Click to toggle contents of PSICHIC local development </summary>
+
+
 Currently, PSICHIC is validated for use on MacOS (OSX), Linux and Windows. We recommend installation via conda, or even better, using the faster mamba package and environment manager. Mamba can be installed with the command ``conda install mamba -n base -c conda-forge``. For setup using either conda or mamba, please refer to the relevant code line provided below.
 
 ```
@@ -28,15 +47,6 @@ pip install scipy biopython pandas biopandas timeout_decorator py3Dmol umap-lear
 pip install "fair-esm"
 ```
 
-## Virtual Screening Platform <a href="https://colab.research.google.com/github/huankoh/PSICHIC/blob/main/PSICHIC.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-- **Only Sequence Data**: Protein Sequence + Ligand SMILES pairs is all you need.
-- **Quick Screening**: Up to 100K compounds in an hour.
-- **Deep Analysis**: Uncover molecular insights with PSICHIC-powered pharmacophore and targeted mutagenesis analysis.
-
-_Start exploring. Your next discovery could be just clicks away!_
-
-**UPDATE:** We now included selectivity online platform (beta version) in selectivity subfolder that demonstrate how PSICHIC can be used for selectivity profiling.
 
 ## BYO-PSICHIC with Annotated Sequence Data 
 
@@ -61,10 +71,10 @@ __Binding Affinity Regression__
 
 | Protein | Ligand | regression_label | 
 |:----------:|:----------:|:----------:|
-| ATCGATCG....  | C1CCCCC1  | 6.7 | 
-| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 |
+| ISAFQAAYIGIE....  | C1CCCCC1  | 6.7 | 
+| GGALVSVISAFQASV....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 |
 |...|...| ...|
-|TACGTACG | CCO | 8.1 | 
+| MIPSAYIGIEVLI... | CCO | 8.1 | 
 
 ```
 python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --regression_task True 
@@ -74,10 +84,10 @@ __Binary Interaction Classification__
 
 | Protein | Ligand | classification_label | 
 |:----------:|:----------:|:----------:|
-| ATCGATCG....  | C1CCCCC1  | 1 | 
-| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 0 |
+| ISAFQAAYIGIE....  | C1CCCCC1  | 1 | 
+| GGALVSVISAFQASV.... | O=C(C)Oc1ccccc1C(=O)O | 0 |
 |...|...| ...|
-|TACGTACG | CCO | 1 | 
+| MIPSAYIGIEVLI.... | CCO | 1 | 
 
 ```
 python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --classification_task True
@@ -87,10 +97,10 @@ __Functional Effect Classification (Three-way Classification)__
 
 | Protein | Ligand | multiclass_label | 
 |:----------:|:----------:|:----------:|
-| ATCGATCG....  | C1CCCCC1  | -1 |  # antagonist
-| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 0 | # non-binder
+| ISAFQAAYIGIE....  | C1CCCCC1  | -1 |  # antagonist
+| GGALVSVISAFQASV.... | O=C(C)Oc1ccccc1C(=O)O | 0 | # non-binder
 |...|...| ...|
-|TACGTACG | CCO | 1 | # agonist
+| MIPSAYIGIEVLI.... | CCO | 1 | # agonist
 
 ```
 python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --mclassification_task 3
@@ -100,10 +110,10 @@ __Multi Task PSICHIC__
 
 | Protein | Ligand | regression_label | multiclass_label | 
 |:----------:|:----------:|:----------:|:----------:|
-| ATCGATCG....  | C1CCCCC1  | 6.7 | -1 |  # antagonist
-| GCTAGCTA....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 | 0 | # non-binder
+| ISAFQAAYIGIE....  | C1CCCCC1  | 6.7 | -1 |  # antagonist
+| GGALVSVISAFQASV....  | O=C(C)Oc1ccccc1C(=O)O | 4.0 | 0 | # non-binder
 |...|...| ...|
-|TACGTACG | CCO | 8.1 | 1 | # agonist
+| MIPSAYIGIEVLI.... | CCO | 8.1 | 1 | # agonist
 
 ```
 python main.py --datafolder BYO_DATASET --result_path BYO_RESULT --regression_task True --mclassification_task 3
@@ -126,6 +136,9 @@ python main.py --regression_task True --mclassification_task 3 --datafolder data
 We have renamed the PSICHIC version trained on the extensive interaction dataset as PSICHIC<sub>XL</sub>, and the subset focusing on A<sub>1</sub>R data as PSICHIC<sub>A<sub>1</sub>R</sub>. Previously, PSICHIC<sub>XL</sub> and PSICHIC<sub>A<sub>1</sub>R</sub> were known as pre-trained PSICHIC and fine-tuned PSICHIC, respectively. This change more accurately reflects PSICHIC<sub>XL</sub>'s broad applicability and PSICHIC<sub>A<sub>1</sub>R</sub>'s specific emphasis on A1R.
 
 For any other proteins, you can filter out irrelevant proteins and the non-binders in large-scale interaction dataset to apply PSICHIC for other experiments.
+</details>
+
+
 
 ## References
 
