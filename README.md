@@ -16,8 +16,7 @@ _Start exploring. Your next discovery_ 🌐🔬 _could be just clicks away!_
 - **Quick Screening**: Up to 100K compounds in an hour.
 - **Deep Analysis**: Uncover molecular insights with PSICHIC-powered pharmacophore and targeted mutagenesis analysis.
 
-**UPDATE:** We now included selectivity online platform (beta version) in selectivity subfolder that demonstrate how PSICHIC can be used for selectivity profiling.
-
+**UPDATE:** We included a jupyter notebook in selectivity subfolder to demonstrate how PSICHIC can be used for selectivity profiling.
 
 ## PSICHIC Environment Setup for Local Deployment
 <details>
