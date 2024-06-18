@@ -8,7 +8,7 @@ Exciting news❗ The PSICHIC webserver (beta version) is now available! 🚀 Exp
 
 _Start exploring. Your next discovery_ 🌐🔬 _could be just clicks away!_
 
-<sub>Note: This server is a beta version and is not officially associated with the paper. For the official version, you can refer to the Colab and local deployment setup below.</sub>
+<sub>Note: This server is not officially associated with the paper. For the official version, you can refer to the Colab and local deployment setup below.</sub>
 
 ## PSICHIC Virtual Screening Platform <a href="https://colab.research.google.com/github/huankoh/PSICHIC/blob/main/PSICHIC.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
