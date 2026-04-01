@@ -445,10 +445,15 @@ def tree_decomposition(
 
 ###
 
-def smiles2graph(m_str):
-    mgd = MoleculeGraphDataset(halogen_detail=False)
+_DEFAULT_MGD = MoleculeGraphDataset(halogen_detail=False)
+
+
+def smiles2graph(m_str, mgd=None):
+    if mgd is None:
+        mgd = _DEFAULT_MGD
     mol = Chem.MolFromSmiles(m_str)
-    #mol = get_mol(m_str)
+    if mol is None:
+        raise ValueError(f"RDKit cannot parse SMILES: {m_str}")
     atom_feature, bond_feature = mgd.featurize(mol,'atom_full_feature')
     atom_idx, _ = mgd.featurize(mol,'atom_type')
     tree = mgd.junction_tree(mol)
