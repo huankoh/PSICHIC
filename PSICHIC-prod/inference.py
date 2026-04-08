@@ -405,15 +405,24 @@ def _open_lmdb(path: Path, map_size: int = 10 * 1024**3) -> Any:
     return lmdb.open(str(path), map_size=map_size)
 
 
-def _lmdb_put_batch(env: Any, items: list[tuple[bytes, bytes]]) -> None:
-    """Write a batch of (key, value) pairs to LMDB, auto-resizing on MapFullError."""
+def _lmdb_put_batch(env: Any, items: list[tuple[bytes, bytes]]) -> int:
+    """Write a batch of (key, value) pairs to LMDB, auto-resizing on MapFullError.
+
+    Returns the number of items that failed to write (skipped, not crashed).
+    """
     import lmdb
+    skipped = 0
     while True:
         try:
             with env.begin(write=True) as txn:
                 for key, value in items:
-                    txn.put(key, value)
-            return
+                    try:
+                        txn.put(key, value)
+                    except (lmdb.BadValsizeError, lmdb.Error) as exc:
+                        log.warning("LMDB put skipped (key=%d B, val=%d B): %s",
+                                    len(key), len(value), exc)
+                        skipped += 1
+            return skipped
         except lmdb.MapFullError:
             new_size = env.info()["map_size"] * 2
             log.info("LMDB MapFullError — resizing to %d GB", new_size // (1024**3))
@@ -475,7 +484,7 @@ def precompute_ligands_lmdb(
         hits = 0
         with env.begin() as txn:
             for csmi in canonical_smiles_set:
-                if txn.get(csmi.encode("utf-8")) is not None:
+                if txn.get(_smiles_hash(csmi).encode("utf-8")) is not None:
                     hits += 1
                 else:
                     missing.append(csmi)
@@ -509,7 +518,7 @@ def precompute_ligands_lmdb(
                     if error is not None:
                         failed_count += 1
                     else:
-                        key = csmi.encode("utf-8")
+                        key = _smiles_hash(csmi).encode("utf-8")
                         write_items.append((key, feat_bytes))
                         computed += 1
 
@@ -547,7 +556,7 @@ def _lmdb_batch_get(lmdb_path: Path, keys: list[str]) -> dict[str, dict[str, Any
         result: dict[str, dict[str, Any]] = {}
         with env.begin() as txn:
             for key in keys:
-                raw = txn.get(key.encode("utf-8"))
+                raw = txn.get(_smiles_hash(key).encode("utf-8"))
                 if raw is not None:
                     result[key] = torch.load(
                         io.BytesIO(raw), weights_only=True, map_location="cpu",
