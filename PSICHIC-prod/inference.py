@@ -219,7 +219,10 @@ def _parse_smiles_csv(path: Path) -> list[str]:
 
     with open(path, newline="") as fh:
         reader = csv.reader(fh)
-        header = next(reader)
+        try:
+            header = next(reader)
+        except StopIteration:
+            raise ValueError(f"Empty CSV file: {path}") from None
 
         for i, col in enumerate(header):
             if col.strip().lower() in ("smiles", "smi", "canonical_smiles", "compound_smiles"):
@@ -413,9 +416,12 @@ def _open_lmdb(path: Path, map_size: int = 10 * 1024**3) -> Any:
     """Open or create an LMDB environment with secure permissions."""
     import lmdb
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    # Enforce permissions even if directory already existed with looser perms
+    # Enforce permissions even if directories already existed with looser perms
     os.chmod(path.parent, 0o700)
-    return lmdb.open(str(path), map_size=map_size)
+    env = lmdb.open(str(path), map_size=map_size)
+    if path.exists():
+        os.chmod(path, 0o700)
+    return env
 
 
 def _lmdb_put_batch(env: Any, items: list[tuple[bytes, bytes]]) -> int:
@@ -1312,7 +1318,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ligand-workers", type=int, default=0,
-        help="Number of ligand featurization workers (0=auto, uses all cores minus 2)",
+        help="Number of ligand featurization workers (0=auto, max 8)",
     )
     # Interpretation flags
     parser.add_argument(
