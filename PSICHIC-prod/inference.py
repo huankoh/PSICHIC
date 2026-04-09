@@ -207,28 +207,42 @@ def _parse_smiles_file(path: Path) -> list[str]:
 
 
 def _parse_smiles_csv(path: Path) -> list[str]:
-    """Parse SMILES from a CSV file with a 'smiles' column."""
-    import pandas as pd
+    """Parse SMILES from a CSV file with a 'smiles' column.
 
-    df = pd.read_csv(path)
-    smiles_col = None
-    for col in df.columns:
-        if col.lower() in ("smiles", "smi", "canonical_smiles", "compound_smiles"):
-            smiles_col = col
-            break
-    if smiles_col is None:
-        smiles_col = df.columns[0]
-        log.warning("No 'smiles' column found, using first column: '%s'", smiles_col)
-
-    raw = df[smiles_col].dropna().astype(str).str.strip().tolist()
+    Uses streaming csv.reader to avoid loading the entire file into memory,
+    which matters for ZINC-scale files (tens of millions of rows).
+    """
+    smiles_col_idx: int | None = None
+    smiles_col_name: str = ""
     seen: set[str] = set()
     unique: list[str] = []
-    for s in raw:
-        if s and s not in seen:
-            seen.add(s)
-            unique.append(s)
 
-    log.info("Parsed %d unique SMILES from %s (column '%s')", len(unique), path.name, smiles_col)
+    with open(path, newline="") as fh:
+        reader = csv.reader(fh)
+        try:
+            header = next(reader)
+        except StopIteration:
+            raise ValueError(f"Empty CSV file: {path}") from None
+
+        for i, col in enumerate(header):
+            if col.strip().lower() in ("smiles", "smi", "canonical_smiles", "compound_smiles"):
+                smiles_col_idx = i
+                smiles_col_name = col.strip()
+                break
+        if smiles_col_idx is None:
+            smiles_col_idx = 0
+            smiles_col_name = header[0].strip()
+            log.warning("No 'smiles' column found, using first column: '%s'", smiles_col_name)
+
+        for row in reader:
+            if smiles_col_idx >= len(row):
+                continue
+            s = row[smiles_col_idx].strip()
+            if s and s not in seen:
+                seen.add(s)
+                unique.append(s)
+
+    log.info("Parsed %d unique SMILES from %s (column '%s')", len(unique), path.name, smiles_col_name)
     return unique
 
 
@@ -402,18 +416,32 @@ def _open_lmdb(path: Path, map_size: int = 10 * 1024**3) -> Any:
     """Open or create an LMDB environment with secure permissions."""
     import lmdb
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    return lmdb.open(str(path), map_size=map_size)
+    # Enforce permissions even if directories already existed with looser perms
+    os.chmod(path.parent, 0o700)
+    env = lmdb.open(str(path), map_size=map_size)
+    if path.exists():
+        os.chmod(path, 0o700)
+    return env
 
 
-def _lmdb_put_batch(env: Any, items: list[tuple[bytes, bytes]]) -> None:
-    """Write a batch of (key, value) pairs to LMDB, auto-resizing on MapFullError."""
+def _lmdb_put_batch(env: Any, items: list[tuple[bytes, bytes]]) -> int:
+    """Write a batch of (key, value) pairs to LMDB, auto-resizing on MapFullError.
+
+    Returns the number of items that failed to write (skipped, not crashed).
+    """
     import lmdb
+    skipped = 0
     while True:
         try:
             with env.begin(write=True) as txn:
                 for key, value in items:
-                    txn.put(key, value)
-            return
+                    try:
+                        txn.put(key, value)
+                    except (lmdb.BadValsizeError, lmdb.Error) as exc:
+                        log.warning("LMDB put skipped (key=%d B, val=%d B): %s",
+                                    len(key), len(value), exc)
+                        skipped += 1
+            return skipped
         except lmdb.MapFullError:
             new_size = env.info()["map_size"] * 2
             log.info("LMDB MapFullError — resizing to %d GB", new_size // (1024**3))
@@ -475,7 +503,7 @@ def precompute_ligands_lmdb(
         hits = 0
         with env.begin() as txn:
             for csmi in canonical_smiles_set:
-                if txn.get(csmi.encode("utf-8")) is not None:
+                if txn.get(_smiles_hash(csmi).encode("utf-8")) is not None:
                     hits += 1
                 else:
                     missing.append(csmi)
@@ -509,7 +537,7 @@ def precompute_ligands_lmdb(
                     if error is not None:
                         failed_count += 1
                     else:
-                        key = csmi.encode("utf-8")
+                        key = _smiles_hash(csmi).encode("utf-8")
                         write_items.append((key, feat_bytes))
                         computed += 1
 
@@ -525,14 +553,14 @@ def precompute_ligands_lmdb(
                         "  Ligands: %d/%d computed (%.0f/s), %d failed",
                         computed, len(missing), rate, failed_count,
                     )
+        elapsed = time.perf_counter() - t0
+        log.info(
+            "Ligand preprocessing: %d computed, %d failed in %.1fs (%.0f/s)",
+            computed, failed_count, elapsed, computed / elapsed if elapsed > 0 else 0,
+        )
     finally:
         env.close()
 
-    elapsed = time.perf_counter() - t0
-    log.info(
-        "Ligand preprocessing: %d computed, %d failed in %.1fs (%.0f/s)",
-        computed, failed_count, elapsed, computed / elapsed if elapsed > 0 else 0,
-    )
     return lmdb_path, hits, computed
 
 
@@ -540,6 +568,10 @@ def _lmdb_batch_get(lmdb_path: Path, keys: list[str]) -> dict[str, dict[str, Any
     """Batch-read post-transformed ligand features from LMDB.
 
     Values are deserialized via torch.load(weights_only=True).
+
+    NOTE: lock=False is used because reads only happen after all writes are
+    complete (Step 5 runs after Step 2). Do NOT call this concurrently with
+    precompute_ligands_lmdb or another writer — torn pages may result.
     """
     import lmdb
     env = lmdb.open(str(lmdb_path), readonly=True, lock=False)
@@ -547,7 +579,7 @@ def _lmdb_batch_get(lmdb_path: Path, keys: list[str]) -> dict[str, dict[str, Any
         result: dict[str, dict[str, Any]] = {}
         with env.begin() as txn:
             for key in keys:
-                raw = txn.get(key.encode("utf-8"))
+                raw = txn.get(_smiles_hash(key).encode("utf-8"))
                 if raw is not None:
                     result[key] = torch.load(
                         io.BytesIO(raw), weights_only=True, map_location="cpu",
@@ -742,6 +774,74 @@ def _run_forward(
 # ---------------------------------------------------------------------------
 
 
+def _load_chunk_ligands(
+    canonical_smiles: list[str],
+    lmdb_path: Path | None,
+    memory_ligands: dict[str, dict[str, Any]] | None,
+) -> dict[str, dict[str, Any]]:
+    """Load ligand features for a chunk from LMDB or memory cache."""
+    unique_canonical = list(set(canonical_smiles))
+    if lmdb_path is not None:
+        return _lmdb_batch_get(lmdb_path, unique_canonical)
+
+    chunk_ligands: dict[str, dict[str, Any]] = {}
+    for k in unique_canonical:
+        if k in memory_ligands:
+            chunk_ligands[k] = memory_ligands[k]
+        else:
+            log.warning("Canonical SMILES missing from memory cache: %s", k)
+    return chunk_ligands
+
+
+def _score_batch(
+    batch_pairs: list[tuple[str, str, str, str]],
+    chunk_ligands: dict[str, dict[str, Any]],
+    protein_features: dict[str, dict],
+    model: torch.nn.Module,
+    use_amp: bool,
+    has_cls: bool,
+    has_mcls: bool,
+    device: torch.device,
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None]:
+    """Build batch, run forward pass, extract predictions.
+
+    Returns (reg_np, cls_np_or_None, mcls_np_or_None).
+    """
+    data_objects: list[MultiGraphData] = []
+    for _pid, prot_seq, can_smi, _orig_smi in batch_pairs:
+        prot = protein_features[prot_seq]
+        mol = chunk_ligands[can_smi]
+        data_objects.append(build_data_object(mol, prot))
+
+    batch = Batch.from_data_list(
+        data_objects,
+        follow_batch=["mol_x", "clique_x", "prot_node_aa"],
+    ).to(device)
+
+    reg_pred, cls_pred, mcls_pred, _ = _run_forward(
+        model, batch, use_amp, save_cluster=False,
+    )
+
+    # atleast_1d guards against squeeze on batch_size=1
+    reg_np = (
+        np.atleast_1d(reg_pred.squeeze().detach().cpu().float().numpy())
+        if reg_pred is not None
+        else np.zeros(len(batch_pairs))
+    )
+
+    cls_np = None
+    if cls_pred is not None and has_cls:
+        cls_np = np.atleast_1d(
+            torch.sigmoid(cls_pred).squeeze().detach().cpu().float().numpy()
+        )
+
+    mcls_np = None
+    if mcls_pred is not None and has_mcls:
+        mcls_np = torch.softmax(mcls_pred, dim=-1).detach().cpu().float().numpy()
+
+    return reg_np, cls_np, mcls_np
+
+
 def _safe_protein_id(protein_id: str) -> str:
     """Sanitize protein_id for filesystem use."""
     safe = re.sub(r'[/\\:*?"<>|]', "_", protein_id)
@@ -800,24 +900,9 @@ def screen_streaming_topk(
     with torch.inference_mode():
         for chunk_start in range(0, num_ligands, LIGAND_CHUNK_SIZE):
             chunk_smiles = valid_smiles[chunk_start:chunk_start + LIGAND_CHUNK_SIZE]
-
-            # Get canonical SMILES for this chunk
             chunk_canonical = [canonical_map[s] for s in chunk_smiles]
-            unique_canonical_in_chunk = list(set(chunk_canonical))
+            chunk_ligands = _load_chunk_ligands(chunk_canonical, lmdb_path, memory_ligands)
 
-            # Load ligand features for this chunk
-            if lmdb_path is not None:
-                chunk_ligands = _lmdb_batch_get(lmdb_path, unique_canonical_in_chunk)
-            else:
-                chunk_ligands = {}
-                for k in unique_canonical_in_chunk:
-                    if k in memory_ligands:
-                        chunk_ligands[k] = memory_ligands[k]
-                    else:
-                        log.warning("Canonical SMILES missing from memory cache: %s", k)
-
-            # Build pairs lazily — avoid materializing the full protein × ligand
-            # cross-product in memory (would be num_proteins × chunk_size tuples).
             pair_iter = (
                 (prot_id, prot_seq, can_smi, orig_smi)
                 for prot_id, prot_seq in proteins.items()
@@ -825,38 +910,12 @@ def screen_streaming_topk(
                 if can_smi in chunk_ligands
             )
 
-            # Score in batches (consume generator incrementally)
             for batch_pairs in _batch_iter(pair_iter, batch_size):
-                data_objects: list[MultiGraphData] = []
-                for _pid, prot_seq, can_smi, _orig_smi in batch_pairs:
-                    prot = protein_features[prot_seq]
-                    mol = chunk_ligands[can_smi]
-                    data_objects.append(build_data_object(mol, prot))
-
-                batch = Batch.from_data_list(
-                    data_objects,
-                    follow_batch=["mol_x", "clique_x", "prot_node_aa"],
-                ).to(device)
-
-                reg_pred, cls_pred, mcls_pred, _ = _run_forward(
-                    model, batch, use_amp, save_cluster=False,
+                reg_np, cls_np, mcls_np = _score_batch(
+                    batch_pairs, chunk_ligands, protein_features,
+                    model, use_amp, has_cls, has_mcls, device,
                 )
 
-                # Extract predictions (atleast_1d guards against squeeze on batch_size=1)
-                if reg_pred is not None:
-                    reg_np = np.atleast_1d(reg_pred.squeeze().detach().cpu().float().numpy())
-                else:
-                    reg_np = np.zeros(len(batch_pairs))
-
-                cls_np = None
-                if cls_pred is not None and has_cls:
-                    cls_np = np.atleast_1d(torch.sigmoid(cls_pred).squeeze().detach().cpu().float().numpy())
-
-                mcls_np = None
-                if mcls_pred is not None and has_mcls:
-                    mcls_np = torch.softmax(mcls_pred, dim=-1).detach().cpu().float().numpy()
-
-                # Update heaps
                 for i, (prot_id, _seq, _csmi, orig_smi) in enumerate(batch_pairs):
                     score = float(reg_np[i])
                     cls_val = float(cls_np[i]) if cls_np is not None else None
@@ -871,13 +930,9 @@ def screen_streaming_topk(
 
                 scored += len(batch_pairs)
 
-            # Progress per chunk
             elapsed = time.perf_counter() - t0
             rate = scored / elapsed if elapsed > 0 else 0
-            log.info(
-                "  Scored %d / %d pairs (%.0f pairs/s)",
-                scored, total_pairs, rate,
-            )
+            log.info("  Scored %d / %d pairs (%.0f pairs/s)", scored, total_pairs, rate)
 
     total_time = time.perf_counter() - t0
     log.info(
@@ -930,19 +985,8 @@ def screen_all(
         for chunk_start in range(0, num_ligands, LIGAND_CHUNK_SIZE):
             chunk_smiles = valid_smiles[chunk_start:chunk_start + LIGAND_CHUNK_SIZE]
             chunk_canonical = [canonical_map[s] for s in chunk_smiles]
-            unique_canonical_in_chunk = list(set(chunk_canonical))
+            chunk_ligands = _load_chunk_ligands(chunk_canonical, lmdb_path, memory_ligands)
 
-            if lmdb_path is not None:
-                chunk_ligands = _lmdb_batch_get(lmdb_path, unique_canonical_in_chunk)
-            else:
-                chunk_ligands = {}
-                for k in unique_canonical_in_chunk:
-                    if k in memory_ligands:
-                        chunk_ligands[k] = memory_ligands[k]
-                    else:
-                        log.warning("Canonical SMILES missing from memory cache: %s", k)
-
-            # Build pairs lazily (same as screen_streaming_topk)
             pair_iter = (
                 (prot_id, prot_seq, can_smi, orig_smi)
                 for prot_id, prot_seq in proteins.items()
@@ -951,30 +995,10 @@ def screen_all(
             )
 
             for batch_pairs in _batch_iter(pair_iter, batch_size):
-                data_objects = []
-                for _pid, prot_seq, can_smi, _orig_smi in batch_pairs:
-                    prot = protein_features[prot_seq]
-                    mol = chunk_ligands[can_smi]
-                    data_objects.append(build_data_object(mol, prot))
-
-                batch = Batch.from_data_list(
-                    data_objects,
-                    follow_batch=["mol_x", "clique_x", "prot_node_aa"],
-                ).to(device)
-
-                reg_pred, cls_pred, mcls_pred, _ = _run_forward(
-                    model, batch, use_amp, save_cluster=False,
+                reg_np, cls_np, mcls_np = _score_batch(
+                    batch_pairs, chunk_ligands, protein_features,
+                    model, use_amp, has_cls, has_mcls, device,
                 )
-
-                reg_np = np.atleast_1d(reg_pred.squeeze().detach().cpu().float().numpy()) if reg_pred is not None else np.zeros(len(batch_pairs))
-
-                cls_np = None
-                if cls_pred is not None and has_cls:
-                    cls_np = np.atleast_1d(torch.sigmoid(cls_pred).squeeze().detach().cpu().float().numpy())
-
-                mcls_np = None
-                if mcls_pred is not None and has_mcls:
-                    mcls_np = torch.softmax(mcls_pred, dim=-1).detach().cpu().float().numpy()
 
                 for i, (prot_id, prot_seq, _csmi, orig_smi) in enumerate(batch_pairs):
                     row: dict[str, Any] = {
@@ -986,7 +1010,6 @@ def screen_all(
                     if has_cls and cls_np is not None:
                         row["predicted_binary_interaction"] = round(float(cls_np[i]), 4)
                     if has_mcls and mcls_np is not None:
-                        # softmax order: [antagonist, nonbinder, agonist] per screening.py
                         row["predicted_agonist"] = round(float(mcls_np[i][2]), 4)
                         row["predicted_antagonist"] = round(float(mcls_np[i][0]), 4)
                         row["predicted_nonbinder"] = round(float(mcls_np[i][1]), 4)
@@ -1227,16 +1250,25 @@ def write_topk_csv(
 
 
 def sort_csv_by_score(output_path: Path) -> None:
-    """Sort an existing CSV by (protein_id asc, prediction desc)."""
-    import pandas as pd
+    """Sort an existing CSV by (protein_id asc, prediction desc).
 
-    df = pd.read_csv(output_path)
-    df = df.sort_values(
-        by=["protein_id", "prediction"],
-        ascending=[True, False],
-    ).reset_index(drop=True)
-    df.to_csv(output_path, index=False)
-    log.info("Sorted %d rows in %s", len(df), output_path)
+    Uses stdlib csv to avoid loading the entire file into a pandas DataFrame.
+    """
+    with open(output_path, newline="") as fh:
+        reader = csv.reader(fh)
+        header = next(reader)
+        rows = list(reader)
+
+    pid_idx = header.index("protein_id")
+    pred_idx = header.index("prediction")
+    rows.sort(key=lambda r: (r[pid_idx], -float(r[pred_idx])))
+
+    with open(output_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        writer.writerows(rows)
+
+    log.info("Sorted %d rows in %s", len(rows), output_path)
 
 
 # ---------------------------------------------------------------------------
@@ -1286,7 +1318,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ligand-workers", type=int, default=0,
-        help="Number of ligand featurization workers (0=auto, uses all cores minus 2)",
+        help="Number of ligand featurization workers (0=auto, max 8)",
     )
     # Interpretation flags
     parser.add_argument(
@@ -1372,7 +1404,9 @@ def main() -> None:
 
     lmdb_path: Path | None = None
     memory_ligands: dict[str, dict[str, Any]] | None = None
+    MAX_LIGAND_WORKERS = 8
     num_workers = args.ligand_workers if args.ligand_workers > 0 else max(1, (os.cpu_count() or 1) - 2)
+    num_workers = min(num_workers, MAX_LIGAND_WORKERS)
 
     if args.no_ligand_cache:
         memory_ligands = precompute_ligands_memory(unique_canonical, num_workers)

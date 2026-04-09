@@ -188,9 +188,16 @@ def _process_sliding_window(
     return token_representation, contact_prob_map
 
 
+_STANDARD_AA = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+
 def _replace_non_standard_residues(seq: str) -> str:
-    """Replace U and B with X for ESM compatibility."""
-    return seq.replace("U", "X").replace("B", "X")
+    """Replace any non-standard amino acid with X for ESM compatibility.
+
+    Handles U (selenocysteine), B (Asx), O (pyrrolysine), J (Xle), Z (Glx),
+    and any other character not in the standard 20.
+    """
+    return "".join(c if c in _STANDARD_AA else "X" for c in seq)
 
 
 def batched_protein_init(
