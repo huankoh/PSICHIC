@@ -445,6 +445,8 @@ def tree_decomposition(
 
 ###
 
+# Module-level singleton — safe with multiprocessing "spawn" (each worker
+# re-imports and gets its own copy). NOT thread-safe for concurrent use.
 _DEFAULT_MGD = MoleculeGraphDataset(halogen_detail=False)
 
 
