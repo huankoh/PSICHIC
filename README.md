@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=huankoh&project=PSICHIC&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 ## PSICHIC: physicochemical graph neural network for learning protein-ligand interaction fingerprints from sequence data [[Nature Machine Intelligence](https://www.nature.com/articles/s42256-024-00847-1)]
 
 <img src="image/PSICHIC.jpg" width="500"/>
